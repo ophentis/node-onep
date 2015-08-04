@@ -1,7 +1,7 @@
 // node.js library for Exosite One Platform
 //
 'use strict';
-var _ = require('underscore');
+var _ = require('lodash');
 var async = require('async');
 var util = require('util');
 var request = require('request');
@@ -19,7 +19,7 @@ function jstr(value, replacer, space) {
 
 /**
  * Split array a into chunks of at most size N
- * Destroys a and returns array of chunks, e.g. 
+ * Destroys a and returns array of chunks, e.g.
  * [n1, n2, n3, n4, n5] => [[n1, n2], [n3, n4], [n5]]
  */
 function chunkArray(a, size) {
@@ -29,7 +29,7 @@ function chunkArray(a, size) {
   }
   return arrays;
 }
- 
+
 exports.setOptions = function(options) {
   _.extend(OPTIONS, options);
 };
@@ -39,8 +39,8 @@ exports.setOptions = function(options) {
  */
 exports.call = function(auth, procedure, args, callback) {
   exports.callMulti(
-    auth, 
-    [{procedure: procedure, arguments: args}], 
+    auth,
+    [{procedure: procedure, arguments: args}],
     callback);
 };
 
@@ -78,7 +78,7 @@ exports.callMulti = function(auth, calls, callback) {
   if (OPTIONS.hasOwnProperty('timeout')) {
     options.timeout = OPTIONS.timeout;
   }
-  
+
   request(options, function (error, response, body) {
     if (error !== null) {
       callback(error);
@@ -102,7 +102,7 @@ exports.callMulti = function(auth, calls, callback) {
           var id = obj[i].id;
           delete response.id;
           responses[id] = obj[i];
-        } 
+        }
         callback(null, responses, response);
       }
     }
@@ -143,27 +143,27 @@ exports.error = function(rpcresponse) {
 /**
  * Walk the tree of a client and its descendant resources.
  *
- * result looks like this: 
+ * result looks like this:
  * [{
- *   rid: "01234...", 
+ *   rid: "01234...",
  *   children: [{
- *     rid: "23456...", 
+ *     rid: "23456...",
  *     status: 'locked'
  *     }]
- *  }, 
+ *  },
  *  {
  *    rid: "12345..."
  *  }]
  * options are:
- *   depth  stop at a given depth from the root client (if 
+ *   depth  stop at a given depth from the root client (if
  *          omitted, depth is not limited)
- *   visit  function to call as each resource is visited. 
+ *   visit  function to call as each resource is visited.
  *          Takes rid, type, and depth parameters.
  *   info   Object describing info to be read for each resource
  *          visited and put in the info key, or null to not read.
  *          It may also be a function called with rid, type, depth.
  *          Takes rid, type, and depth parameters.
- *   types  list of type strings. Options are "dataport", 
+ *   types  list of type strings. Options are "dataport",
  *          "datarule", "dispatch". If omitted, visits only clients.
  * callback  takes err, tree
  */
@@ -201,7 +201,7 @@ exports.tree = function(auth, options, callback) {
           }
         }
       });
-      exports.walk(tree, 
+      exports.walk(tree,
         function(resource, depth, parentRid) {
           if (resource.rid in info) {
             resource.info = info[resource.rid];
@@ -224,7 +224,7 @@ exports.walk = function(tree, visit) {
   var nextgen = [];
   while (gen.length > 0) {
     for (var i = 0; i < gen.length; i++) {
-      visit(gen[i].res, depth, gen[i].par);      
+      visit(gen[i].res, depth, gen[i].par);
       if (_.has(gen[i].res, 'children')) {
         for (var j = 0; j < gen[i].res.children.length; j++) {
           nextgen.push({res: gen[i].res.children[j], par: gen[i].res.rid});
@@ -248,7 +248,7 @@ function callMultiOK(auth, calls, callback) {
   calls = _.map(calls, function(c) {
     return {procedure: c[0], arguments: c[1]};
   });
-  exports.callMulti(auth, calls,  
+  exports.callMulti(auth, calls,
     function(err, rpcresponse, httpresponse) {
       if (err) {
         return callback(err);
@@ -280,25 +280,25 @@ function _tree(auth, options, depth, client_rid, infoRequests, callback) {
     }
     if (typeof info !== 'undefined' && info !== null) {
       resource.info = info;
-    } 
+    }
     return resource;
   }
-  
+
   // Determine whether we should do an RPC info
   // call for a resource. If so, returns info options.
   // If not, returns null.
   function getInfo(rid, type, depth) {
-    var info = null; 
+    var info = null;
     if (options.hasOwnProperty('info')) {
       if (_.isFunction(options.info)) {
         info = options.info(rid, type, depth);
       } else {
         info = options.info;
       }
-    } 
+    }
     return info;
   }
-  
+
   // Visit a resource, and add to
   // the list of info requests to make in batch later
   function visit(rid, type, depth) {
@@ -308,20 +308,20 @@ function _tree(auth, options, depth, client_rid, infoRequests, callback) {
     }
   }
 
-  // Visit a resource and then add an info 
+  // Visit a resource and then add an info
   // call to be made later, if necessary.
   function visitAndQueue(rid, type, depth) {
     visit(rid, type, depth);
     var info = getInfo(rid, type, depth);
     if (info !== null) {
-      infoRequests.push({procedure: 'info', arguments: [rid, info]}); 
+      infoRequests.push({procedure: 'info', arguments: [rid, info]});
     }
   }
 
   var rid = client_rid;
 
   // if we've reached depth and already have
-  // an rid, we don't need to make RPC calls 
+  // an rid, we don't need to make RPC calls
   if (depth === options.depth && rid !== null) {
     visitAndQueue(rid, 'client', depth);
     return callback(null, makeResource(rid, 'client'), infoRequests);
@@ -360,7 +360,7 @@ function _tree(auth, options, depth, client_rid, infoRequests, callback) {
         rid = results[lookupIdx];
       }
       var infoIdx = callProcs.indexOf('info');
-      var clientInfo = null; 
+      var clientInfo = null;
       if (infoIdx !== -1) {
         clientInfo = results[infoIdx];
         // visit without queuing a call for info
@@ -403,7 +403,7 @@ function _tree(auth, options, depth, client_rid, infoRequests, callback) {
               return;
             }
             // only include tree if the client has children
-            // (or if it's not null, which signals that depth 
+            // (or if it's not null, which signals that depth
             // limit was reached)
             if (tree !== null) {
               _.extend(resource, tree);
@@ -425,7 +425,7 @@ function _tree(auth, options, depth, client_rid, infoRequests, callback) {
     }
   );
 }
- 
+
 /**
  * Make a lot of RPC calls, splitting the calls into evenly
  * sized chunks and calling in parallel.
@@ -452,14 +452,14 @@ exports.batch = function(auth, calls, options, callback) {
         chunk,
         function(err, rpcresponse, httpresponse) {
           if (err) {
-            msg = 'Overall RPC error in batch() ' + 
-              ': err is ' + err + ' rpcresponse is ' + JSON.stringify(rpcresponse) + 
+            msg = 'Overall RPC error in batch() ' +
+              ': err is ' + err + ' rpcresponse is ' + JSON.stringify(rpcresponse) +
               ' request was ' + JSON.stringify(_.pluck(chunk, 'call'));
             return mapReqCallback(new Error(msg));
-          } 
+          }
           for (var i = 0; i < rpcresponse.length; i++) {
             if (rpcresponse[i].status !== 'ok') {
-              msg = 'Error ' + JSON.stringify(chunk[i].call) + 
+              msg = 'Error ' + JSON.stringify(chunk[i].call) +
                   ' => ' + JSON.stringify(rpcresponse[i]) + '\n';
               if (verbose) {
                 process.stderr.write(msg);
@@ -471,7 +471,7 @@ exports.batch = function(auth, calls, options, callback) {
         });
       };
   });
- 
+
   async.parallelLimit(rpcRequests, parallelLimit, function(err, responses) {
     callback(err, _.flatten(responses));
   });
@@ -479,7 +479,7 @@ exports.batch = function(auth, calls, options, callback) {
 
 // check that an object has only specified keys
 function hasOnly(obj, keys, valid) {
-  return _.every(_.keys(obj), function(k) { 
+  return _.every(_.keys(obj), function(k) {
     return keys.indexOf(k) !== -1 && (valid ? valid(k) : true);
   });
 }
@@ -488,23 +488,23 @@ function listHasOnly(list, subkeys, valid, validObj) {
   return _.every(list, function(o) {
     return hasOnly(o, subkeys, valid) && (validObj ? validObj(o) : true);
   });
-} 
+}
 
 
 /**
  * General error/no error callback
  * @callback specCallback
  * @param {object} error - Error instance
- * @param {object} rids - arrays of rids in "dataports", "scripts", 
- *                        and "clients" in the same order they occur 
+ * @param {object} rids - arrays of rids in "dataports", "scripts",
+ *                        and "clients" in the same order they occur
  *                        in the spec.
  */
 
-/** 
+/**
  * Create dataports and scripts for a client
- *  based on a subset of Exoline spec: 
+ *  based on a subset of Exoline spec:
  *  https://github.com/exosite/exoline#spec
- * 
+ *
  * Supported spec subset:
  *  dataports: alias, format, unit, name, initial
  *  scripts: alias, code, name
@@ -515,23 +515,23 @@ function listHasOnly(list, subkeys, valid, validObj) {
  * @param {object} spec - what dataports and scripts to create in the
  *                        client refererenced by auth. May contain
  *                        "dataports" and "scripts" keys which contain lists
- *                        of dataport, script, and client` spec objects, 
- *                        respectively.  E.g., to create one dataport and one 
+ *                        of dataport, script, and client` spec objects,
+ *                        respectively.  E.g., to create one dataport and one
  *                        script, pass:
  *                        {
  *                          dataports: [{alias: temp_c, format: float, initial: 22}],
- *                          scripts: [{alias: hello, code: "debug('Hello, World!')"}] 
- *                        } 
+ *                          scripts: [{alias: hello, code: "debug('Hello, World!')"}]
+ *                        }
  *                        Note that unlike Exoline spec, no validation is
  *                        done. It's just reusing the spec format to make it
  *                        easier to create devices.
  *
- * @param {errCallback) callback - whether or not there was an error 
+ * @param {errCallback) callback - whether or not there was an error
  */
 exports.createFromSpec = function(auth, spec, callback) {
 
   var supportBaseKeys = ['dataports', 'scripts', 'clients'];
-  if (!hasOnly(spec, supportBaseKeys, 
+  if (!hasOnly(spec, supportBaseKeys,
       function(k) { return _.isArray(spec[k]); })) {
     return callback(new Error("spec base keys should be in " + jstr(supportBaseKeys) + " and be arrays."));
   }
@@ -543,7 +543,7 @@ exports.createFromSpec = function(auth, spec, callback) {
     function(o) { return _.has(o, 'alias'); })) {
     return callback(new Error("spec dataports must have key \"alias\" and may only have these: " + jstr(supportDataportKeys)));
   }
-   
+
   // validate scripts
   var supportScriptKeys = ['alias', 'code', 'name'];
   var scripts = _.has(spec, 'scripts') ? spec.scripts: [];
@@ -581,7 +581,7 @@ exports.createFromSpec = function(auth, spec, callback) {
       name: _.has(script, 'name') ? script.name : script.alias,
       preprocess: [],
       rule: {
-        script: script.code 
+        script: script.code
       },
       visibility: 'parent',
       retention: {
@@ -630,7 +630,7 @@ exports.createFromSpec = function(auth, spec, callback) {
       if (_.has(allResources[i], 'initial')) {
         calls.push(['write', [rid, allResources[i].initial]]);
       }
-    }); 
+    });
     callMultiOK(auth, calls, function(err, results) {
       if (err) {
         return callback(err);
@@ -644,7 +644,7 @@ exports.createFromSpec = function(auth, spec, callback) {
       _.each(dataports, function(dp) {
         specResponse.dataports.push(rids[i]);
         i++;
-      });      
+      });
       _.each(scripts, function(script) {
         specResponse.scripts.push(rids[i]);
         i++;
